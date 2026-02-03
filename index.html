@@ -1,1 +1,136 @@
-Index html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Academic Marksheet Pro - Final Polished</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 20px;
+            background: #f0f2f5;
+        }
+
+        .app-container {
+            max-width: 1000px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .setup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 10px;
+            font-weight: bold;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-load {
+            background: #333;
+            color: white;
+        }
+
+        .btn-view {
+            background: #1a73e8;
+            color: white;
+            display: none;
+        }
+
+        .btn-download {
+            background: #34a853;
+            color: white;
+            display: none;
+        }
+
+        #status-tick {
+            display: none;
+            color: #34a853;
+            font-size: 20px;
+        }
+
+        #preview-container {
+            margin-top: 20px;
+            height: 700px;
+            display: none;
+            border: 1px solid #eee;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <h2 style="margin-top:0; color: #1a73e8;">Academic Marksheet Pro</h2>
+        <div class="setup-grid">
+            <div class="field"><label>School Name</label><input type="text" id="school"
+                    value="St. Mary's Higher Secondary School"></div>
+            <div class="field"><label>Exam Name</label><input type="text" id="exam" value="Second Terminal Exam"></div>
+            <div class="field"><label>Class</label><input type="text" id="className" value="10-B"></div>
+            <div class="field"><label>Month - Year</label><input type="text" id="dateInput" value="March - 2026"></div>
+            <div class="field"><label>Max Marks</label><input type="number" id="maxM" value="50"></div>
+        </div>
+
+        <div class="toolbar">
+            <input type="file" id="excelFile" hidden accept=".xlsx, .xls, .csv, .ods">
+            <button class="btn-load" onclick="document.getElementById('excelFile').click()">Load Excel</button>
+            <span id="fileName">No file selected</span>
+            <span id="status-tick">✔</span>
+            <button id="viewBtn" class="btn-view" onclick="updatePreview()">View PDF</button>
+            <button id="downloadBtn" class="btn-download" onclick="downloadPDF()">Download PDF</button>
+        </div>
+        <div id="preview-container"><iframe id="pdfPreview"></iframe></div>
+    </div>
+
+    <script src="getresult.js"></script>
+</body>
+
+</html>
