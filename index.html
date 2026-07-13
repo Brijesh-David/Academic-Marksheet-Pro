@@ -1,296 +1,399 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Marksheet Pro</title>
-
+    <title>Academic Marksheet Pro - v3.1</title>
     <link rel="icon" type="image/png" href="favicon.png">
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 20px;
-            background: #f0f2f5;
-        }
+        *{box-sizing:border-box;}
+        body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;margin:20px;background:#f0f2f5;}
+        .app-container{max-width:1100px;margin:auto;background:white;padding:25px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,.1);}
+        h2{margin-top:0;color:#1a73e8;display:flex;align-items:center;gap:10px;}
 
-        .app-container {
-            max-width: 1000px;
-            margin: auto;
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        }
+        /* SETUP GRID */
+        .setup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+        .field{display:flex;flex-direction:column;}
+        label{font-size:10px;font-weight:bold;color:#666;text-transform:uppercase;margin-bottom:4px;}
+        input,select{padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;}
 
-        .setup-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }
+        /* UTILITY ROW */
+        .util-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:20px;flex-wrap:wrap;}
+        .util-row .field{min-width:180px;}
 
-        .field {
-            display: flex;
-            flex-direction: column;
-        }
+        /* MODE SELECTOR */
+        .mode-selector{display:flex;gap:10px;margin-bottom:20px;justify-content:center;}
+        .btn-mode{padding:10px 20px;border:2px solid #1a73e8;background:white;color:#1a73e8;border-radius:8px;cursor:pointer;font-weight:bold;transition:.3s;}
+        .btn-mode.active-mode{background:#1a73e8 !important;color:white !important;}
 
-        label {
-            font-size: 10px;
-            font-weight: bold;
-            color: #666;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
+        /* TOOLBAR */
+        .toolbar{display:flex;align-items:center;gap:12px;background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:20px;flex-wrap:wrap;}
+        button{padding:10px 20px;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:.2s;}
+        .btn-load{background:#333;color:white;}
+        .btn-view{background:#1a73e8;color:white;display:none;}
+        .btn-download{background:#34a853;color:white;display:none;}
+        #status-tick{display:none;color:#34a853;font-size:20px;}
 
-        input {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-        }
+        /* ALL-SHEETS ROW */
+        .all-sheets-row{display:none;justify-content:center;gap:14px;margin-bottom:20px;}
 
-        .toolbar {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
+        /* SHEET SELECTOR */
+        .sheet-selector{display:none;flex-wrap:wrap;align-items:center;gap:8px;background:#eef3fc;border:1px solid #d0ddf5;padding:12px 15px;border-radius:8px;margin-bottom:20px;}
+        .sheet-label{font-size:11px;font-weight:bold;color:#555;text-transform:uppercase;margin-right:4px;}
+        .sheet-btn{padding:8px 16px;border:2px solid #1a73e8;background:white;color:#1a73e8;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;}
+        .sheet-btn:hover{background:#eaf1fd;}
+        .sheet-btn.active-sheet{background:#1a73e8;color:white;}
 
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
+        /* THEME EDITOR */
+        .theme-editor{border:1px solid #e0e0e0;border-radius:10px;margin-bottom:20px;overflow:hidden;}
+        .theme-editor summary{padding:12px 18px;background:#f1f3f4;font-weight:bold;color:#1a73e8;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;}
+        .theme-editor[open] summary{border-bottom:1px solid #e0e0e0;}
+        .theme-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;padding:18px;}
+        .theme-control{display:flex;flex-direction:column;gap:6px;}
+        .theme-control label{font-size:11px;color:#555;text-transform:none;font-weight:600;}
+        .stepper{display:flex;align-items:center;gap:6px;}
+        .stepper button{width:32px;height:32px;padding:0;font-size:16px;font-weight:bold;background:#e8eaed;color:#333;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+        .stepper button:hover{background:#d2d5d9;}
+        .stepper-value{min-width:58px;text-align:center;font-weight:600;font-size:13px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:6px 4px;}
+        .color-row{display:flex;align-items:center;gap:10px;}
+        .color-row input[type="color"]{width:44px;height:32px;padding:2px;cursor:pointer;border-radius:4px;}
+        .theme-actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid #eee;}
+        .btn-reset{background:#ea4335;color:white;}
+        .btn-small{font-size:12px;padding:8px 14px;}
 
-        .btn-load {
-            background: #333;
-            color: white;
-        }
+        /* PREVIEW */
+        .preview-header-brand{text-align:center;padding:20px 0;margin-top:10px;border-top:1px solid #eee;}
+        .preview-header-brand img{max-width:90%;height:auto;}
+        #preview-container{height:750px;display:none;border:2px solid #1a73e8;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);}
+        iframe{width:100%;height:100%;border:none;}
+        footer{text-align:center;margin-top:30px;padding:10px;color:#7f8c8d;}
 
-        .btn-view {
-            background: #1a73e8;
-            color: white;
-            display: none;
-        }
-
-        .btn-download {
-            background: #34a853;
-            color: white;
-            display: none;
-        }
-
-        #status-tick {
-            display: none;
-            color: #34a853;
-            font-size: 20px;
-        }
-
-        /* Branding Signature Above PDF */
-        .preview-header-brand {
-            text-align: center;
-            padding: 20px 0;
-            margin-top: 10px;
-            border-top: 1px solid #eee;
-        }
-
-        .preview-header-brand img {
-            max-width: 90%;
-            height: auto;
-        }
-
-        #preview-container {
-            height: 750px;
-            display: none;
-            border: 2px solid #1a73e8;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 30px;
-            padding: 10px;
-            color: #7f8c8d;
-        }
-
-        /* Pop-up Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 10000;
-            /* Increased to stay on top */
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
-            overflow-y: auto;
-            /* ENABLES SCROLLING FOR BIG IMAGES */
-        }
-
-        .modal-content {
-            background-color: #fff;
-            margin: 2% auto;
-            /* Reduced margin for more space */
-            padding: 20px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 900px;
-            text-align: center;
-            position: relative;
-        }
-
-        .close-btn {
-            position: sticky;
-            /* Stays visible even when scrolling */
-            top: 10px;
-            right: 10px;
-            float: right;
-            font-size: 35px;
-            font-weight: bold;
-            color: #333;
-            cursor: pointer;
-            z-index: 10001;
-        }
-
-        .help-img {
-            width: 100%;
-            height: auto;
-            display: block;
-            margin: 10px 0;
-        }
+        /* MODALS */
+        .modal{display:none;position:fixed;z-index:10000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.9);overflow-y:auto;}
+        .modal-content{background:#fff;margin:2% auto;padding:20px;border-radius:12px;width:90%;max-width:900px;text-align:center;position:relative;}
+        .close-btn{position:sticky;top:10px;right:10px;float:right;font-size:35px;font-weight:bold;color:#333;cursor:pointer;z-index:10001;}
+        .help-img{width:100%;height:auto;display:block;margin:10px 0;}
     </style>
 </head>
-
 <body>
 
-    <div id="helpModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeHelpModal()">&times;</span>
-            <h2 style="color: #1a73e8;">સુચનાઓ / Help Guide</h2>
+<!-- HELP MODAL -->
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeHelpModal()">&times;</span>
+        <h2 style="color:#1a73e8;">સુચનાઓ / Help Guide</h2>
+        <img src="Gemini_Generated_instructions.png" alt="Guide Loading..." class="help-img">
+        <div style="padding:20px;background:#f8f9fa;border-top:1px solid #eee;">
+            <button class="btn-load" style="background:#27ae60;padding:15px 50px;font-size:18px;" onclick="closeHelpModal()">સમજાઈ ગયું ✔</button>
+        </div>
+    </div>
+</div>
 
-            <img src="Gemini_Generated_instructions.png" alt="Guide Loading..." class="help-img">
+<!-- ABOUT MODAL -->
+<div id="aboutModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('aboutModal')">&times;</span>
+        <h2 style="color:#1a73e8;border-bottom:2px solid #eee;padding-bottom:10px;">About Academic Marksheet Pro</h2>
+        <div style="text-align:left;">
+            <p><strong>Version:</strong> 3.1 (Verified / Failsafe Edition)</p>
+            <p>A collaboration between <strong>Brijesh</strong> &amp; <strong>Gemini AI / Claude</strong>.</p>
+            <ul>
+                <li><strong>Multi-Sheet:</strong> Load one workbook, switch between class sheets (9A, 9B, 11A…), preview/download individually or all-in-one.</li>
+                <li><strong>Dynamic Layout:</strong> Auto-fits 1–20 subjects in Portrait or Landscape A4.</li>
+                <li><strong>Theme Editor:</strong> Fonts, colors, spacing, fail/rank highlights, binding margins, header rotation.</li>
+                <li><strong>Transposed Summary:</strong> Subjects as rotated headers; Appeared/Passed/Failed/Pass% as rows.</li>
+            </ul>
+            <p style="font-style:italic;color:#7f8c8d;border-top:1px solid #eee;padding-top:10px;">"Precision for the Classroom, Time for the Teacher."</p>
+        </div>
+        <button class="btn-load" style="margin-top:10px;" onclick="closeModal('aboutModal')">Close</button>
+    </div>
+</div>
 
-            <div style="padding: 20px; background: #f8f9fa; border-top: 1px solid #eee;">
-                <button class="btn-load" style="background: #27ae60; padding: 15px 50px; font-size: 18px;"
-                    onclick="closeHelpModal()">સમજાઈ ગયું</button>
+<div class="app-container">
+    <h2><img src="favicon.png" style="height:28px;"> Academic Marksheet Pro <span style="font-size:13px;color:#888;font-weight:400;margin-left:8px;">v3.1</span></h2>
+
+    <!-- UTILITY ROW: Orientation + Help + About -->
+    <div class="util-row">
+        <div class="field" style="min-width:200px;">
+            <label>Page Orientation</label>
+            <select id="pageOrientation">
+                <option value="p">Portrait (A4)</option>
+                <option value="l">Landscape (A4)</option>
+            </select>
+        </div>
+        <div style="display:flex;gap:12px;">
+            <button class="btn-load" style="background:#555;" onclick="openHelp()">સુચનાઓ / Help</button>
+            <button class="btn-load" style="background:#1a73e8;" onclick="openAbout()">About B ✦ Gemini</button>
+        </div>
+    </div>
+
+    <!-- SETUP GRID -->
+    <div class="setup-grid">
+        <div class="field"><label>School Name</label><input type="text" id="school" value="St. Mary's Higher Secondary School"></div>
+        <div class="field"><label>Exam Name</label><input type="text" id="exam" value="Second Terminal Exam"></div>
+        <div class="field"><label>Class</label><input type="text" id="className" value="10-B"></div>
+        <div class="field"><label>Month – Year</label><input type="text" id="dateInput" value="March - 2026"></div>
+        <div class="field"><label>Max Marks (per subject)</label><input type="number" id="maxM" value="80"></div>
+        <div class="field"><label>Pass Threshold (%)</label><input type="number" id="passThreshold" value="33" min="1" max="100" step="1"></div>
+    </div>
+
+    <!-- THEME EDITOR -->
+    <details class="theme-editor">
+        <summary>🎨 Theme Editor — Fonts, Colors, Spacing &amp; Highlights</summary>
+        <div class="theme-grid">
+
+            <div class="theme-control"><label>Body Font Size</label>
+                <div class="stepper"><button onclick="stepTheme('fontSize',-1,6,14)">−</button><span class="stepper-value" id="val-fontSize">9pt</span><button onclick="stepTheme('fontSize',1,6,14)">+</button></div></div>
+
+            <div class="theme-control"><label>Subject Column Width (0 = auto)</label>
+                <div class="stepper"><button onclick="stepColWidth(-0.1)">−</button><span class="stepper-value" id="val-subColW">Auto</span><button onclick="stepColWidth(0.1)">+</button></div></div>
+
+            <div class="theme-control"><label>Student Name Column Width (cm)</label>
+                <div class="stepper"><button onclick="stepTheme('nameColW',-0.2,2.0,8.0)">−</button><span class="stepper-value" id="val-nameColW">4.2cm</span><button onclick="stepTheme('nameColW',0.2,2.0,8.0)">+</button></div></div>
+
+            <div class="theme-control"><label>Student Name Font Size (Auto = body)</label>
+                <div class="stepper"><button onclick="stepNameFont(-1)">−</button><span class="stepper-value" id="val-nameFontSize">Auto</span><button onclick="stepNameFont(1)">+</button></div></div>
+
+            <div class="theme-control"><label>Row Height (cell padding)</label>
+                <div class="stepper"><button onclick="stepTheme('rowPadding',-0.02,0.02,0.4)">−</button><span class="stepper-value" id="val-rowPadding">0.10</span><button onclick="stepTheme('rowPadding',0.02,0.02,0.4)">+</button></div></div>
+
+            <div class="theme-control"><label>Header Font Size (col labels)</label>
+                <div class="stepper"><button onclick="stepTheme('headerFontSize',-1,6,14)">−</button><span class="stepper-value" id="val-headerFontSize">9pt</span><button onclick="stepTheme('headerFontSize',1,6,14)">+</button></div></div>
+
+            <div class="theme-control"><label>Title Font Size (School / Exam)</label>
+                <div class="stepper"><button onclick="stepTheme('titleFontSize',-1,8,24)">−</button><span class="stepper-value" id="val-titleFontSize">14pt</span><button onclick="stepTheme('titleFontSize',1,8,24)">+</button></div></div>
+
+            <div class="theme-control"><label>Body Text Color</label>
+                <div class="color-row"><input type="color" id="color-bodyTextColor" value="#000000" onchange="setColor('bodyTextColor',this.value)"><span>Marks cell text</span></div></div>
+
+            <div class="theme-control"><label>Body Background Color</label>
+                <div class="color-row"><input type="color" id="color-bodyBgColor" value="#ffffff" onchange="setColor('bodyBgColor',this.value)"><span>Table cell fill</span></div></div>
+
+            <div class="theme-control"><label>Header Text Color</label>
+                <div class="color-row"><input type="color" id="color-headerColor" value="#000000" onchange="setColor('headerColor',this.value)"><span>Subject / Total / Rank labels</span></div></div>
+
+            <div class="theme-control"><label>Title Text Color</label>
+                <div class="color-row"><input type="color" id="color-titleColor" value="#000000" onchange="setColor('titleColor',this.value)"><span>School name / exam / date</span></div></div>
+
+            <div class="theme-control"><label>Failed Marks Highlight</label>
+                <div class="color-row"><input type="color" id="color-failHighlight" value="#ebebeb" onchange="setColor('failHighlight',this.value)"><span>Below-pass mark cell</span></div></div>
+
+            <div class="theme-control"><label>Top Rank Row Highlight</label>
+                <div class="color-row"><input type="color" id="color-rankHighlightColor" value="#d2f5d2" onchange="setColor('rankHighlightColor',this.value)"><span>Row fill for top ranks</span></div></div>
+
+            <div class="theme-control"><label>Highlight Top N Ranks (0 = off)</label>
+                <div class="stepper"><button onclick="stepTheme('rankHighlightTop',-1,0,10)">−</button><span class="stepper-value" id="val-rankHighlightTop">3</span><button onclick="stepTheme('rankHighlightTop',1,0,10)">+</button></div></div>
+
+            <div class="theme-control"><label>Zebra Row Striping</label>
+                <div class="stepper"><button class="btn-small" onclick="toggleZebra()" id="btn-zebra">Off</button></div></div>
+
+            <div class="theme-control"><label>Column Header Rotation</label>
+                <select id="headerRotation" onchange="window.themeConfig.headerRotation=parseInt(this.value)">
+                    <option value="90">90° — reads bottom-to-top ↑</option>
+                    <option value="270">270° — reads top-to-bottom ↓</option>
+                </select></div>
+
+            <div class="theme-control"><label>Print Mode</label>
+                <select id="printMode" onchange="window.themeConfig.printMode=this.value">
+                    <option value="single">Single-side (centered)</option>
+                    <option value="double">Double-side (binding margin)</option>
+                </select></div>
+
+            <div class="theme-control"><label>Binding Extra Margin (cm)</label>
+                <div class="stepper"><button onclick="stepTheme('bindingExtra',-0.1,0.3,3.0)">−</button><span class="stepper-value" id="val-bindingExtra">1.00</span><button onclick="stepTheme('bindingExtra',0.1,0.3,3.0)">+</button></div></div>
+
+            <div class="theme-actions">
+                <button class="btn-reset btn-small" onclick="resetAndSync()">↺ Reset to Defaults</button>
             </div>
         </div>
+    </details>
+
+    <!-- MODE SELECTOR -->
+    <div class="mode-selector">
+        <button id="modeTerm" class="btn-mode active-mode" onclick="setMode('terminal')">Terminal Exam (v2.0)</button>
+        <button id="modeBoard" class="btn-mode" onclick="setMode('board')">Board Internal (v3.0)</button>
     </div>
 
-    <div class="app-container">
-        <h2 style="margin-top:0; color: #1a73e8; display: flex; align-items: center; gap: 10px;">
-            <img src="favicon.png" style="height: 28px;"> Academic Marksheet Pro
-        </h2>
-
-        <div class="setup-grid">
-            <div class="field"><label>School Name</label><input type="text" id="school"
-                    value="St. Mary's Higher Secondary School"></div>
-            <div class="field"><label>Exam Name</label><input type="text" id="exam" value="Second Terminal Exam"></div>
-            <div class="field"><label>Class</label><input type="text" id="className" value="10-B"></div>
-            <div class="field"><label>Month - Year</label><input type="text" id="dateInput" value="March - 2026"></div>
-            <div class="field"><label>Max Marks</label><input type="number" id="maxM" value="80"></div>
-        </div>
-
-        <div class="toolbar">
-            <button class="btn-load" style="background: #555;" onclick="showInstructions()">સુચનાઓ / Help</button>
-            <input type="file" id="excelFile" hidden accept=".xlsx, .xls, .csv, .ods">
-            <button class="btn-load" onclick="document.getElementById('excelFile').click()">Load Worksheet</button>
-            <span id="fileName">No file selected</span>
-            <span id="status-tick">✔</span>
-            <button id="viewBtn" class="btn-view" onclick="updatePreview()">View PDF</button>
-            <button id="downloadBtn" class="btn-download" onclick="downloadPDF()">Download PDF</button>
-            <button class="btn-load" style="background: #1a73e8;" onclick="openAbout()">About B ✦ Gemini</button>
-        </div>
-
-        <div class="preview-header-brand">
-            <img src="logo_bottom.png" alt="B ✦ Gemini Collaboration Signature">
-        </div>
-
-        <div id="preview-container">
-            <iframe id="pdfPreview"></iframe>
-        </div>
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+        <input type="file" id="excelFile" hidden accept=".xlsx,.xls,.csv,.ods">
+        <button class="btn-load" onclick="document.getElementById('excelFile').click()">📂 Load Worksheet</button>
+        <span id="fileName" style="font-size:13px;color:#555;">No file selected</span>
+        <span id="status-tick">✔</span>
+        <button id="viewBtn" class="btn-view" onclick="handleView()">View / Refresh PDF</button>
+        <button id="downloadBtn" class="btn-download" onclick="handleDownload()">⬇ Download PDF</button>
     </div>
 
-    <div id="aboutModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal('aboutModal')">&times;</span>
-            <h2 style="color: #1a73e8; border-bottom: 2px solid #eee; padding-bottom: 10px;">About Academic Marksheet
-                Pro</h2>
+    <!-- SHEET SELECTOR -->
+    <div id="sheetSelector" class="sheet-selector"></div>
 
-            <div class="about-text-container">
-                <p><strong>Version:</strong> 2.0 (Stable) </p>
-                <p>This application is a specialized collaboration between <strong>Brijesh</strong> and <strong>Gemini
-                        AI</strong>, developed to automate complex academic result processing .</p>
-                <ul>
-                    <li><strong>Logic:</strong> Automated ranking, percentage calculation, and "Absent" handling.</li>
-                    <li><strong>Design:</strong> Professional PDF generation with 30% transparent branding and
-                        dual-language dedications.</li>
-                    <li><strong>Security:</strong> Core processing logic is obfuscated for intellectual property
-                        protection .</li>
-                </ul>
-                <p style="font-style: italic; color: #7f8c8d; border-top: 1px solid #eee; padding-top: 10px;">"Precision
-                    for the Classroom, Time for the Teacher." </p>
-            </div>
-
-            <button class="btn-close-ui" onclick="closeModal('aboutModal')">Close</button>
-        </div>
+    <!-- ALL-SHEETS ROW (centered, shown only when multiple sheets) -->
+    <div id="allSheetsRow" class="all-sheets-row">
+        <button style="background:#9c27b0;color:white;padding:10px 24px;border-radius:6px;font-weight:600;" onclick="updatePreviewAllSheets()">🗂 Preview All Sheets</button>
+        <button style="background:#673ab7;color:white;padding:10px 24px;border-radius:6px;font-weight:600;" onclick="downloadAllSheetsPDF()">⬇ Download All Sheets</button>
     </div>
 
-    <footer>
-        <p style="font-size: 13px; font-style: italic;">Precision for the Classroom, Time for the Teacher.</p>
-        <p style="font-size: 14px; font-weight: bold; color: #2c3e50;">"શિક્ષકોના સમયનું સન્માન, પરિણામમાં ચોકસાઈનું
-            પ્રમાણ"</p>
-    </footer>
+    <!-- BRAND + PREVIEW -->
+    <div class="preview-header-brand">
+        <img src="logo_bottom.png" alt="B ✦ Gemini Collaboration Signature">
+    </div>
+    <div id="preview-container"><iframe id="pdfPreview"></iframe></div>
+</div>
 
-    <script src="libs/9-2-26_getresult.js"></script>
-    <script src="libs/config.js"></script>
+<footer>
+    <p style="font-size:13px;font-style:italic;">Precision for the Classroom, Time for the Teacher.</p>
+    <p style="font-size:14px;font-weight:bold;color:#2c3e50;">"શિક્ષકોના સમયનું સન્માન, પરિણામમાં ચોકસાઈનું પ્રમાણ"</p>
+</footer>
 
-    <script>
-        function openHelp() {
-            document.getElementById('helpModal').style.display = 'block';
-            document.body.style.overflow = 'hidden'; // Prevents background from scrolling
+<!-- SCRIPTS load first so getresult.js (loaded last) can call window.xxx functions -->
+
+<script>
+    // ---- MODAL HELPERS ----
+    function openHelp()  { document.getElementById('helpModal').style.display='block'; document.body.style.overflow='hidden'; }
+    function closeHelpModal() { document.getElementById('helpModal').style.display='none'; document.body.style.overflow='auto'; }
+    function openAbout() { document.getElementById('aboutModal').style.display='block'; }
+    function closeModal(id) { document.getElementById(id).style.display='none'; document.body.style.overflow='auto'; }
+    window.addEventListener('DOMContentLoaded', () => setTimeout(openHelp, 900));
+</script>
+
+<script>
+    // ---- MODE + VIEW HANDLERS ----
+    let currentMode = 'terminal';
+    function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active-mode'));
+        document.getElementById(mode === 'terminal' ? 'modeTerm' : 'modeBoard').classList.add('active-mode');
+    }
+    function handleView() {
+        if (currentMode === 'terminal') updatePreview();
+        else if (typeof generateBoardReports === 'function') generateBoardReports('view');
+        else updatePreview();
+    }
+    function handleDownload() {
+        if (currentMode === 'terminal') downloadPDF();
+        else if (typeof generateBoardReports === 'function') generateBoardReports('download');
+        else downloadPDF();
+    }
+</script>
+
+<script>
+    // ---- MULTI-SHEET SELECTOR ----
+    window.renderSheetSelector = (sheetNames) => {
+        const container = document.getElementById('sheetSelector');
+        const allRow    = document.getElementById('allSheetsRow');
+        container.innerHTML = '';
+        if (!sheetNames || sheetNames.length <= 1) {
+            container.style.display = 'none';
+            allRow.style.display = 'none';
+            return;
         }
-
-        function closeHelpModal() {
-            document.getElementById('helpModal').style.display = 'none';
-            document.body.style.overflow = 'auto'; // Restores background scrolling
-        }
-
-        // Auto-pop the Help image on startup
-        window.addEventListener('DOMContentLoaded', (event) => {
-            setTimeout(openHelp, 1000);
+        const lbl = document.createElement('span');
+        lbl.className = 'sheet-label'; lbl.textContent = 'Sheets:';
+        container.appendChild(lbl);
+        sheetNames.forEach(name => {
+            const btn = document.createElement('button');
+            btn.className = 'sheet-btn'; btn.textContent = name; btn.dataset.sheet = name;
+            btn.onclick = () => {
+                if (window.loadSheet(name) && document.getElementById('preview-container').style.display !== 'none')
+                    window.updatePreview();
+            };
+            container.appendChild(btn);
         });
-    </script>
+        container.style.display = 'flex';
+        allRow.style.display = 'flex';
+    };
 
-    <script>
-        function openHelp() { document.getElementById('helpModal').style.display = 'block'; }
-        function openAbout() { document.getElementById('aboutModal').style.display = 'block'; }
+    window.highlightActiveSheet = (sheetName) => {
+        document.querySelectorAll('.sheet-btn').forEach(b => b.classList.toggle('active-sheet', b.dataset.sheet === sheetName));
+        const nameEl = document.getElementById('fileName');
+        const base = nameEl.dataset.baseName || '';
+        nameEl.textContent = base ? `${base}  —  Sheet: ${sheetName}` : `Sheet: ${sheetName}`;
+    };
+</script>
 
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-    </script>
+<script>
+    // ---- THEME EDITOR CONTROLS ----
+    // stepTheme: generic numeric stepper — safely handles null
+    function stepTheme(key, delta, min, max) {
+        let val = window.themeConfig[key];
+        if (val == null) val = 0;
+        val = Math.round((parseFloat(val) + delta) * 100) / 100;
+        window.themeConfig[key] = Math.max(min, Math.min(max, val));
+        syncThemeUI();
+    }
+
+    // Subject column width: null ↔ numeric cm
+    function stepColWidth(delta) {
+        let val = window.themeConfig.subColW;
+        if (val == null) val = 0;
+        val = Math.round((val + delta) * 100) / 100;
+        window.themeConfig.subColW = val <= 0 ? null : Math.max(0.4, Math.min(2.5, val));
+        syncThemeUI();
+    }
+
+    // Name font: null ↔ pt value
+    function stepNameFont(delta) {
+        let val = window.themeConfig.nameFontSize;
+        if (!val || val <= 0) val = window.themeConfig.fontSize;
+        val = Math.round(val + delta);
+        window.themeConfig.nameFontSize = val <= 5 ? null : Math.max(6, Math.min(18, val));
+        syncThemeUI();
+    }
+
+    function setColor(key, hex) {
+        window.themeConfig[key] = [parseInt(hex.substr(1,2),16), parseInt(hex.substr(3,2),16), parseInt(hex.substr(5,2),16)];
+    }
+
+    function toggleZebra() {
+        window.themeConfig.zebraStripe = !window.themeConfig.zebraStripe;
+        document.getElementById('btn-zebra').textContent = window.themeConfig.zebraStripe ? 'On ✔' : 'Off';
+    }
+
+    function resetAndSync() {
+        if (typeof window.resetTheme === 'function') window.resetTheme();
+        else syncThemeUI();
+    }
+
+    // Sync UI from themeConfig — safe to call even before getresult.js sets themeConfig
+    function syncThemeUI() {
+        const t = window.themeConfig;
+        if (!t) return;
+        const rh = window.rgbToHex || (rgb => '#' + rgb.map(c=>c.toString(16).padStart(2,'0')).join(''));
+
+        document.getElementById('val-fontSize').textContent        = t.fontSize + 'pt';
+        document.getElementById('val-headerFontSize').textContent  = t.headerFontSize + 'pt';
+        document.getElementById('val-titleFontSize').textContent   = t.titleFontSize + 'pt';
+        document.getElementById('val-rowPadding').textContent      = t.rowPadding.toFixed(2);
+        document.getElementById('val-rankHighlightTop').textContent= t.rankHighlightTop;
+        document.getElementById('val-subColW').textContent         = t.subColW == null ? 'Auto' : t.subColW.toFixed(2) + 'cm';
+        document.getElementById('val-nameColW').textContent        = (t.nameColW || 4.2).toFixed(1) + 'cm';
+        document.getElementById('val-nameFontSize').textContent    = (!t.nameFontSize || t.nameFontSize <= 0) ? 'Auto' : t.nameFontSize + 'pt';
+        document.getElementById('val-bindingExtra').textContent    = t.bindingExtra.toFixed(2);
+
+        document.getElementById('color-bodyTextColor').value       = rh(t.bodyTextColor);
+        document.getElementById('color-bodyBgColor').value         = rh(t.bodyBgColor);
+        document.getElementById('color-headerColor').value         = rh(t.headerColor);
+        document.getElementById('color-titleColor').value          = rh(t.titleColor);
+        document.getElementById('color-failHighlight').value       = rh(t.failHighlight);
+        document.getElementById('color-rankHighlightColor').value  = rh(t.rankHighlightColor);
+
+        document.getElementById('btn-zebra').textContent           = t.zebraStripe ? 'On ✔' : 'Off';
+        document.getElementById('pageOrientation').value           = t.orientation || 'p';
+        document.getElementById('printMode').value                 = t.printMode || 'single';
+        document.getElementById('headerRotation').value            = String(t.headerRotation || 90);
+    }
+
+    // Sync AFTER getresult.js has loaded (it's the last script, so DOMContentLoaded already fired —
+    // use a small timeout to ensure getresult.js window.themeConfig is available)
+    window.addEventListener('DOMContentLoaded', () => setTimeout(syncThemeUI, 200));
+    window.syncThemeUI = syncThemeUI;
+</script>
+
+<script src="getresult_13Jul26_1831.js"></script>
+<script src="boardresult.js"></script>
+<script src="config.js"></script>
 </body>
-
 </html>
-
