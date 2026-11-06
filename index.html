@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Marksheet Pro - v4.0</title>
+    <title>Academic Marksheet Pro - v4.7</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -38,7 +38,7 @@
         #status-tick{display:none;color:#34a853;font-size:20px;}
 
         /* ALL-SHEETS ROW */
-        .all-sheets-row{display:none;justify-content:center;gap:14px;margin-bottom:20px;}
+        .all-sheets-row{display:none;justify-content:center;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
 
         /* SHEET SELECTOR */
         .sheet-selector{display:none;flex-wrap:wrap;align-items:center;gap:8px;background:#eef3fc;border:1px solid #d0ddf5;padding:12px 15px;border-radius:8px;margin-bottom:20px;}
@@ -104,7 +104,7 @@
         <span class="close-btn" onclick="closeModal('aboutModal')">&times;</span>
         <h2 style="color:#1a73e8;border-bottom:2px solid #eee;padding-bottom:10px;">About Academic Marksheet Pro</h2>
         <div style="text-align:left;">
-            <p><strong>Version:</strong> 3.1 (Verified / Failsafe Edition)</p>
+            <p><strong>Version:</strong> 4.7 (Verified / Failsafe Edition)</p>
             <p>A collaboration between <strong>Brijesh</strong> &amp; <strong>Gemini AI / Claude</strong>.</p>
             <ul>
                 <li><strong>Multi-Sheet:</strong> Load one workbook, switch between class sheets (9A, 9B, 11A…), preview/download individually or all-in-one.</li>
@@ -119,7 +119,7 @@
 </div>
 
 <div class="app-container">
-    <h2><img src="favicon.png" style="height:28px;"> Academic Marksheet Pro <span style="font-size:13px;color:#888;font-weight:400;margin-left:8px;">v4.0</span></h2>
+    <h2><img src="favicon.png" style="height:28px;"> Academic Marksheet Pro <span style="font-size:13px;color:#888;font-weight:400;margin-left:8px;">v3.1</span></h2>
 
     <!-- UTILITY ROW: Orientation + Help + About -->
     <div class="util-row">
@@ -178,6 +178,9 @@
             <div class="theme-control"><label>Body Background Color</label>
                 <div class="color-row"><input type="color" id="color-bodyBgColor" value="#ffffff" onchange="setColor('bodyBgColor',this.value)"><span>Table cell fill</span></div></div>
 
+            <div class="theme-control"><label>For Better Visibility</label>
+                <div class="color-row" style="margin-top:6px;"><button class="btn-small" onclick="toggleZebra()" id="btn-zebra" style="min-width:92px;">Zebra: Off</button><input type="color" id="color-zebraColor" value="#e6eef8" onchange="setColor('zebraColor',this.value)" title="Alternate-row colour"><span>Alternate rows</span></div></div>
+
             <div class="theme-control"><label>Header Text Color</label>
                 <div class="color-row"><input type="color" id="color-headerColor" value="#000000" onchange="setColor('headerColor',this.value)"><span>Subject / Total / Rank labels</span></div></div>
 
@@ -193,11 +196,9 @@
             <div class="theme-control"><label>Highlight Top N Ranks (0 = off)</label>
                 <div class="stepper"><button onclick="stepTheme('rankHighlightTop',-1,0,10)">−</button><span class="stepper-value" id="val-rankHighlightTop">3</span><button onclick="stepTheme('rankHighlightTop',1,0,10)">+</button></div></div>
 
-            <div class="theme-control"><label>Zebra Row Striping</label>
-                <div class="stepper"><button class="btn-small" onclick="toggleZebra()" id="btn-zebra">Off</button></div></div>
-
             <div class="theme-control"><label>Total / Per % / Result / Rank columns</label>
                 <select id="tailStyle" onchange="window.themeConfig.tailStyle=this.value">
+                    <option value="normal">Normal (same as marks)</option>
                     <option value="plain">Bold only (no shading)</option>
                     <option value="light">Light grey shade + bold</option>
                     <option value="dark">Dark grey shade + white text</option>
@@ -241,6 +242,8 @@
         <span id="status-tick">✔</span>
         <button id="viewBtn" class="btn-view" onclick="handleView()">View / Refresh PDF</button>
         <button id="downloadBtn" class="btn-download" onclick="handleDownload()">⬇ Download PDF</button>
+        <button id="xlsxBtn" data-export-btn style="display:none;background:#0f9d58;color:white;" onclick="exportMarksheet('xlsx')" title="Editable Excel file with live formulas">⬇ Excel (.xlsx)</button>
+        <button id="odsBtn" data-export-btn style="display:none;background:#0a7e8c;color:white;" onclick="exportMarksheet('ods')" title="Editable LibreOffice Calc file with live formulas">⬇ ODS (LibreOffice)</button>
     </div>
 
     <!-- SHEET SELECTOR -->
@@ -253,6 +256,8 @@
     <div id="allSheetsRow" class="all-sheets-row">
         <button style="background:#9c27b0;color:white;padding:10px 24px;border-radius:6px;font-weight:600;" onclick="updatePreviewAllSheets()">🗂 Preview All Sheets</button>
         <button style="background:#673ab7;color:white;padding:10px 24px;border-radius:6px;font-weight:600;" onclick="downloadAllSheetsPDF()">⬇ Download All Sheets</button>
+        <button data-export-btn style="background:#0f9d58;color:white;padding:10px 24px;border-radius:6px;font-weight:600;" onclick="exportMarksheet('xlsx', true)" title="One worksheet per class">⬇ All Sheets → Excel</button>
+        <button data-export-btn style="background:#0a7e8c;color:white;padding:10px 24px;border-radius:6px;font-weight:600;" onclick="exportMarksheet('ods', true)" title="One worksheet per class">⬇ All Sheets → ODS</button>
     </div>
 
     <!-- BRAND + PREVIEW -->
@@ -271,11 +276,24 @@
 
 <script>
     // ---- MODAL HELPERS ----
-    function openHelp()  { document.getElementById('helpModal').style.display='block'; document.body.style.overflow='hidden'; }
+    // Help opens by itself only for a NEW user, then at most once every HELP_EVERY_DAYS days.
+    // Uses localStorage (stays on this device, no cookies, works for a locally opened file too).
+    const HELP_KEY = 'marksheetPro.helpLastShown';
+    const HELP_EVERY_DAYS = 7;
+    function helpDue() {
+        try {
+            const last = parseInt(localStorage.getItem(HELP_KEY) || '0', 10);
+            if (!last || last > Date.now() + 86400000) return true;      // never shown (or a nonsense future date)
+            return (Date.now() - last) > HELP_EVERY_DAYS * 86400000;
+        } catch (e) { return false; }   // storage blocked: do not nag on every visit (the Help button still works)
+    }
+    function rememberHelpShown() { try { localStorage.setItem(HELP_KEY, String(Date.now())); } catch (e) {} }
+
+    function openHelp()  { document.getElementById('helpModal').style.display='block'; document.body.style.overflow='hidden'; rememberHelpShown(); }
     function closeHelpModal() { document.getElementById('helpModal').style.display='none'; document.body.style.overflow='auto'; }
     function openAbout() { document.getElementById('aboutModal').style.display='block'; }
     function closeModal(id) { document.getElementById(id).style.display='none'; document.body.style.overflow='auto'; }
-    window.addEventListener('DOMContentLoaded', () => setTimeout(openHelp, 900));
+    window.addEventListener('DOMContentLoaded', () => { if (helpDue()) setTimeout(openHelp, 900); });
 </script>
 
 <script>
@@ -409,7 +427,7 @@
 
     function toggleZebra() {
         window.themeConfig.zebraStripe = !window.themeConfig.zebraStripe;
-        document.getElementById('btn-zebra').textContent = window.themeConfig.zebraStripe ? 'On ✔' : 'Off';
+        document.getElementById('btn-zebra').textContent = window.themeConfig.zebraStripe ? 'Zebra: On ✔' : 'Zebra: Off';
     }
 
     function resetAndSync() {
@@ -440,11 +458,12 @@
         document.getElementById('color-failHighlight').value       = rh(t.failHighlight);
         document.getElementById('color-rankHighlightColor').value  = rh(t.rankHighlightColor);
 
-        document.getElementById('btn-zebra').textContent           = t.zebraStripe ? 'On ✔' : 'Off';
+        document.getElementById('btn-zebra').textContent           = t.zebraStripe ? 'Zebra: On ✔' : 'Zebra: Off';
+        document.getElementById('color-zebraColor').value          = rh(t.zebraColor);
         document.getElementById('pageOrientation').value           = t.orientation || 'p';
         document.getElementById('printMode').value                 = t.printMode || 'single';
         document.getElementById('headerRotation').value            = String(t.headerRotation || 90);
-        document.getElementById('tailStyle').value                 = t.tailStyle || 'light';
+        document.getElementById('tailStyle').value                 = t.tailStyle || 'plain';
         document.getElementById('btn-autofit').textContent         = (t.autoFit === false) ? 'Off' : 'On ✔';
     }
 
@@ -454,7 +473,8 @@
     window.syncThemeUI = syncThemeUI;
 </script>
 
-<script src="libs/getresult-145206.js"></script>
+<script src="libs/getresult_002332.js"></script>
+<script src="libs/exportsheet_002354.js"></script>
 <script src="libs/boardresult.js"></script>
 <script src="libs/config.js"></script>
 </body>
